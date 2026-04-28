@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的商城</title>
+
+<style>
+body { font-family: Arial; margin:0; background:#f5f5f5; }
+
+header {
+    background:#222;
+    color:white;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+}
+
+.container { display:flex; }
+
+/* 商品 */
+.products {
+    flex:3;
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    padding:20px;
+}
+
+.product {
+    background:white;
+    padding:15px;
+    width:200px;
+    border-radius:10px;
+    text-align:center;
+}
+
+/* 側邊 */
+.sidebar {
+    flex:1;
+    background:white;
+    padding:20px;
+    border-left:2px solid #ddd;
+}
+
+input {
+    width:100%;
+    margin:5px 0;
+    padding:8px;
+}
+
+button {
+    background:#28a745;
+    color:white;
+    border:none;
+    padding:8px;
+    cursor:pointer;
+    margin-top:5px;
+}
+
+.cart-item {
+    border-bottom:1px solid #ddd;
+    padding:5px 0;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h2>🛍 我的商城</h2>
+    <div>🛒 <span id="cart-count">0</span></div>
+</header>
+
+<div class="container">
+
+<!-- 商品 -->
+<div class="products" id="product-list"></div>
+
+<!-- 側邊 -->
+<div class="sidebar">
+
+    <!-- 🛠 後台 -->
+    <h3>新增商品</h3>
+    <input id="name" placeholder="商品名稱">
+    <input id="price" placeholder="價格">
+    <input id="img" placeholder="圖片網址">
+    <button onclick="addProduct()">新增商品</button>
+
+    <hr>
+
+    <!-- 🛒 購物車 -->
+    <h3>購物車</h3>
+    <div id="cart-items"></div>
+    <h4>總價：NT$ <span id="total">0</span></h4>
+    <button onclick="clearCart()">清空購物車</button>
+
+    <hr>
+
+    <!-- 📦 結帳 -->
+    <h3>填寫訂單</h3>
+    <input id="buyerName" placeholder="姓名">
+    <input id="buyerPhone" placeholder="電話">
+    <input id="buyerAddress" placeholder="地址">
+    <button onclick="checkout()">送出訂單</button>
+
+</div>
+
+</div>
+
+<script>
+
+// 商品 & 購物車
+let products = JSON.parse(localStorage.getItem("products")) || [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+// ================= 商品 =================
+function renderProducts() {
+    const el = document.getElementById("product-list");
+    el.innerHTML = "";
+
+    products.forEach((p, index) => {
+        el.innerHTML += `
+        <div class="product">
+            <img src="${p.img}" style="width:100%">
+            <h4>${p.name}</h4>
+            <p>NT$ ${p.price}</p>
+            <button onclick="addToCart(${index})">加入購物車</button>
+        </div>`;
+    });
+}
+
+function addProduct() {
+    const name = nameInput.value;
+    const price = priceInput.value;
+    const img = imgInput.value;
+
+    if (!name || !price || !img) {
+        alert("請填寫完整！");
+        return;
+    }
+
+    products.push({ name, price: Number(price), img });
+    localStorage.setItem("products", JSON.stringify(products));
+
+    renderProducts();
+
+    nameInput.value = "";
+    priceInput.value = "";
+    imgInput.value = "";
+}
+
+// ================= 購物車 =================
+function addToCart(index) {
+    const product = products[index];
+
+    const item = cart.find(i => i.name === product.name);
+
+    if (item) item.qty++;
+    else cart.push({ ...product, qty:1 });
+
+    saveCart();
+}
+
+function saveCart() {
+    localStorage.setItem("cart", JSON.stringify(cart));
+    renderCart();
+}
+
+function renderCart() {
+    const el = document.getElementById("cart-items");
+    el.innerHTML = "";
+
+    let total = 0;
+    let count = 0;
+
+    cart.forEach((item, i) => {
+        total += item.price * item.qty;
+        count += item.qty;
+
+        el.innerHTML += `
+        <div class="cart-item">
+            ${item.name} x ${item.qty}
+            - NT$ ${item.price * item.qty}
+            <button onclick="changeQty(${i}, -1)">-</button>
+            <button onclick="changeQty(${i}, 1)">+</button>
+        </div>`;
+    });
+
+    document.getElementById("total").innerText = total;
+    document.getElementById("cart-count").innerText = count;
+}
+
+function changeQty(index, change) {
+    cart[index].qty += change;
+
+    if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+    }
+
+    saveCart();
+}
+
+function clearCart() {
+    cart = [];
+    saveCart();
+}
+
+// ================= 訂單 =================
+function checkout() {
+    const name = buyerName.value;
+    const phone = buyerPhone.value;
+    const address = buyerAddress.value;
+
+    if (!name || !phone || !address) {
+        alert("請填寫完整資料！");
+        return;
+    }
+
+    if (cart.length === 0) {
+        alert("購物車是空的！");
+        return;
+    }
+
+    const order = {
+        name,
+        phone,
+        address,
+        cart,
+        total: cart.reduce((sum, i) => sum + i.price*i.qty, 0),
+        time: new Date().toLocaleString()
+    };
+
+    console.log("訂單:", order);
+
+    alert("訂單已送出！（模擬）");
+
+    cart = [];
+    saveCart();
+}
+
+// 初始化
+renderProducts();
+renderCart();
+
+</script>
+
+</body>
+</html>
